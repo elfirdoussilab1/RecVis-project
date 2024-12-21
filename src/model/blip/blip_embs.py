@@ -35,7 +35,7 @@ class BLIPEmbs(nn.Module):
 
         text_width = self.text_encoder.config.hidden_size
 
-        self.vision_proj = nn.Linear(vision_width, embed_dim) # Ay: Pay attention to thses two quantitites!
+        self.vision_proj = nn.Linear(vision_width, embed_dim) # Ay: Pay attention to theses two quantitites!
         self.text_proj = nn.Linear(text_width, embed_dim)
 
         self.queue_size = queue_size
