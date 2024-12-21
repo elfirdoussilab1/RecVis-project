@@ -18,7 +18,7 @@ class transform_train:
                     interpolation=InterpolationMode.BICUBIC,
                 ),
                 transforms.RandomHorizontalFlip(),
-                RandomAugment(
+                RandomAugment( # Ay: Data Augmentation
                     2,
                     5,
                     isPIL=True,

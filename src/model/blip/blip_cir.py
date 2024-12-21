@@ -11,7 +11,7 @@ from src.model.blip.med import BertModel
 from src.tools.utils import print_dist
 
 
-class BLIPCir(nn.Module):
+class BLIPCir(nn.Module): #Ay: CiR means CoIR (CoIR-BLIP !)
     def __init__(
         self,
         loss: Any,
@@ -51,6 +51,7 @@ class BLIPCir(nn.Module):
         self.train_vit = train_vit
         if not self.train_vit:
             # Do not train visual encoder
+            # Ay: Freezing Visual Encoder (see Fig 4 CoVR-2)
             for p in self.visual_encoder.parameters():
                 p.requires_grad = False
 
@@ -71,14 +72,14 @@ class BLIPCir(nn.Module):
         device = ref_img.device
 
         if self.train_vit:
-            ref_img_embs = self.visual_encoder(ref_img)
+            ref_img_embs = self.visual_encoder(ref_img) # Ay: q
         else:
             with torch.no_grad():
                 ref_img_embs = self.visual_encoder(ref_img)
 
         # Encode the target image
-        tar_img_feat = tar_img_feat.to(device)
-        tar_img_feat = F.normalize(tar_img_feat, dim=-1)
+        tar_img_feat = tar_img_feat.to(device) 
+        tar_img_feat = F.normalize(tar_img_feat, dim=-1) # Ay: h(v) ?
 
         # Encode the reference image
         ref_img_atts = torch.ones(ref_img_embs.size()[:-1], dtype=torch.long).to(device)
@@ -89,7 +90,7 @@ class BLIPCir(nn.Module):
             truncation=True,
             max_length=35,
             return_tensors="pt",
-        ).to(device)
+        ).to(device) # Ay: sequence of tokens of modification text "t" (tensor of integers)
 
         # Shift encoder
         encoder_input_ids = text.input_ids.clone()
@@ -100,7 +101,7 @@ class BLIPCir(nn.Module):
             encoder_hidden_states=ref_img_embs,
             encoder_attention_mask=ref_img_atts,
             return_dict=True,
-        )
+        ) # Ay: f(q, t) = f(ref_img_embs, encoder_input_ids)?
         query_si_feat = query_si_embs.last_hidden_state[:, 0, :]
         query_si_feat = F.normalize(self.text_proj(query_si_feat), dim=-1)
 

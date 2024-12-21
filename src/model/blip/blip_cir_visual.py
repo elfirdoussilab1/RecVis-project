@@ -9,7 +9,7 @@ from src.model.blip.blip import create_vit, init_tokenizer, load_checkpoint
 from src.model.blip.med import BertModel
 from src.tools.utils import print_dist
 
-
+# Ay: We will not use this one I guess because it processes only the source and target images !
 class BLIPCirVisualOnly(nn.Module):
     def __init__(
         self,

@@ -3,7 +3,7 @@ from typing import Union
 
 import torch
 
-
+################################ Ay: Text (caption) Processing ################################
 def pre_caption(caption, max_words=50):
     caption = re.sub(
         r"([.!\"()*#:;~])",
@@ -34,10 +34,14 @@ def id2int(data, sub=""):
 
 
 def remove_non_digits(string, sub: str = ""):
+    # This function removes any non-digit character from the argument: string, and outputs an integer value
+    # For example: "recvis24a" --> 24 (int)
     return int(re.sub(r"\D", sub, string))
 
 
-def get_middle_frame(reference_vid_pth):
+################################ Ay: Video Processing ################################
+# Function for video processing (wil not be used in our project)..
+def get_middle_frame(reference_vid_pth): 
     from pathlib import Path
 
     import cv2

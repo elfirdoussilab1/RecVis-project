@@ -18,7 +18,7 @@ class CrossEntropyLoss(nn.Module):
         sim_q2t = query_feat @ tar_img_feat.T / temp
 
         bs = sim_t2q.size(0)
-        loss_t2q = F.cross_entropy(sim_t2q, torch.arange(bs, device=device))
+        loss_t2q = F.cross_entropy(sim_t2q, torch.arange(bs, device=device))# Ay: Somme des S_{i, i} (see page 5 CoVR-2)
         loss_q2t = F.cross_entropy(sim_q2t, torch.arange(bs, device=device))
 
         return (loss_t2q + loss_q2t) / 2

@@ -45,7 +45,7 @@ class ImageDataset(Dataset):
         self.video_ids = list(self.id2pth.keys())
         self.video_ids.sort()
 
-        self.image_size = pixel_size
+        self.image_size = pixel_size # I added this one
         self.transform = transforms.Compose(
             [
                 transforms.Resize(

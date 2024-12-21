@@ -8,6 +8,7 @@
  * https://github.com/rwightman/pytorch-image-models/tree/master/timm
 """
 
+# Ay: Implementation of a Vision transformer from scratch (very interesting!)
 from functools import partial
 
 import torch
@@ -20,7 +21,7 @@ from timm.models.vision_transformer import PatchEmbed
 
 class Mlp(nn.Module):
     """MLP as used in Vision Transformer, MLP-Mixer and related networks"""
-
+    # Ay: Simple MLP with One hidden layer and GeLU activation function (with dropout)
     def __init__(
         self,
         in_features,
@@ -31,7 +32,7 @@ class Mlp(nn.Module):
     ):
         super().__init__()
         out_features = out_features or in_features
-        hidden_features = hidden_features or in_features
+        hidden_features = hidden_features or in_features # means if hidden_features == None, then take in_features
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
         self.fc2 = nn.Linear(hidden_features, out_features)
@@ -46,7 +47,7 @@ class Mlp(nn.Module):
         return x
 
 
-class Attention(nn.Module):
+class Attention(nn.Module): #Ay: Self-Attention Module
     def __init__(
         self,
         dim,
