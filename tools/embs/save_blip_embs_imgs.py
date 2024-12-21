@@ -54,6 +54,7 @@ def main(args):
     dataset = ImageDataset(
         image_dir=args.image_dir,
         save_dir=args.save_dir,
+        pixel_size=args.image_size # added this line
     )
 
     loader = torch.utils.data.DataLoader(
