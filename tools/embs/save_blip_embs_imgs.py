@@ -99,7 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--num_workers", type=int, default=8)
     parser.add_argument(
-        "--model_type", type=str, default="large", choices=["base", "large"]
+        "--model_type", type=str, default="base", choices=["base", "large"]
     )
     args = parser.parse_args()
 
