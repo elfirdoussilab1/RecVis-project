@@ -166,17 +166,17 @@ class CIRRDataset(Dataset):
 
         for ann in self.annotation:
             assert (
-                ann["reference"] in self.id2imgpth
+                ann["reference"] in self.id2imgpth.keys()
             ), f"Path to reference {ann['reference']} not found in {self.img_dir}"
             assert (
-                ann["reference"] in self.id2embpth
+                ann["reference"] in self.id2embpth.keys()
             ), f"Path to reference {ann['reference']} not found in {self.emb_dir}"
             if split != "test":
                 assert (
-                    ann["target_hard"] in self.id2imgpth
+                    ann["target_hard"] in self.id2imgpth.keys()
                 ), f"Path to target {ann['target_hard']} not found"
                 assert (
-                    ann["target_hard"] in self.id2embpth
+                    ann["target_hard"] in self.id2embpth.keys()
                 ), f"Path to target {ann['target_hard']} not found"
 
     def __len__(self) -> int:
