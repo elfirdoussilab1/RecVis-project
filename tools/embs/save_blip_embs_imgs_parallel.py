@@ -1,14 +1,13 @@
-# Author: Aymane El Firdoussi
-# Inscpired from: Lucas Ventura
-
 import os
 import sys
-from pathlib import Path
-
 import torch
 import torch.nn.functional as F
 from tqdm.auto import tqdm
-from multiprocessing import Pool
+from torch import distributed as dist
+from torch.utils.data import DataLoader
+from torch.nn.parallel import DistributedDataParallel as DDP
+from pathlib import Path
+import argparse
 
 script_path = os.path.abspath(__file__)
 script_dir = os.path.dirname(script_path)
@@ -17,9 +16,6 @@ sys.path.append(project_root)
 
 from src.data.embs import ImageDataset
 from src.model.blip.blip_embs import blip_embs
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 def get_blip_config(model="base"):
     config = dict()
@@ -52,22 +48,35 @@ def get_blip_config(model="base"):
 
     return config
 
+def setup(rank, world_size):
+    """Initialize the distributed environment."""
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+    torch.cuda.set_device(rank)
+
+def cleanup():
+    """Clean up the distributed environment."""
+    dist.destroy_process_group()
+
 @torch.no_grad()
 def main(args):
-    dataset = ImageDataset(
-        image_dir=args.image_dir,
-        save_dir=args.save_dir,
-    )
-
-    loader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=args.batch_size,
-        shuffle=False,
-        pin_memory=True,
-        num_workers=args.num_workers,
-    )
-
-    print("Creating model")
+    # Initialize the distributed environment automatically
+    rank = dist.get_rank()  # Get the current process rank
+    world_size = dist.get_world_size()  # Get the total number of processes (GPUs)
+    
+    setup(rank, world_size)
+    
+    dataset = ImageDataset(image_dir=args.image_dir, 
+                           save_dir=args.save_dir)
+    
+    # Use DistributedSampler to ensure each process gets a different subset of the data
+    sampler = torch.utils.data.DistributedSampler(dataset, num_replicas=world_size, rank=rank)
+    loader = DataLoader(dataset, batch_size=args.batch_size, 
+                        shuffle=False, 
+                        pin_memory=True, 
+                        num_workers=args.num_workers, 
+                        sampler=sampler)
+    
+    # Create model
     config = get_blip_config(args.model_type)
     model = blip_embs(
         pretrained=config["pretrained"],
@@ -77,43 +86,32 @@ def main(args):
         vit_ckpt_layer=config["vit_ckpt_layer"],
         queue_size=config["queue_size"],
         negative_all_rank=config["negative_all_rank"],
-    )
-
-    # Enabling Parallel data
-    if torch.cuda.device_count() > 1:
-        print(f"Using {torch.cuda.device_count()} GPUs")
-        model = torch.nn.DataParallel(model)
+    ).to(rank)
     
-    model = model.to(device)
+    # Wrap the model with DDP
+    model = DDP(model, device_ids=[rank], output_device=rank)
+    
     model.eval()
 
+    # Main loop for processing images and saving embeddings
     for imgs, video_ids in tqdm(loader):
-        imgs = imgs.to(device)
-        img_embs = model.visual_encoder(imgs)
-        img_feats = F.normalize(model.vision_proj(img_embs[:, 0, :]), dim=-1).cpu()
+        imgs = imgs.to(rank)
+        img_embs = model.module.visual_encoder(imgs)
+        img_feats = F.normalize(model.module.vision_proj(img_embs[:, 0, :]), dim=-1).cpu()
+        for img_feat, video_id in zip(img_feats, video_ids):
+            torch.save(img_feat, args.save_dir / f"{video_id}.pth")
 
-        # Save the embeddings in parallel
-        with Pool(args.num_workers) as pool:
-            pool.map(save_embedding, [(img_feat, video_id, args.save_dir) for img_feat, video_id in zip(img_feats, video_ids)])
+    cleanup()
     print(f"All Embeddings Saved for {args.image_dir}")
 
-def save_embedding(img_feat_video_id_tuple):
-    img_feat, video_id, save_dir = img_feat_video_id_tuple
-    torch.save(img_feat, save_dir / f"{video_id}.pth")
-
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--image_dir", type=Path, required=True, help="Path to image directory"
-    )
+    parser.add_argument("--image_dir", type=Path, required=True, help="Path to image directory")
     parser.add_argument("--save_dir", type=Path)
-    parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument(
-        "--model_type", type=str, default="large", choices=["base", "large"]
-    )
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--model_type", type=str, default="large", choices=["base", "large"])
+
     args = parser.parse_args()
 
     subdirectories = [subdir for subdir in args.image_dir.iterdir() if subdir.is_dir()]
@@ -124,8 +122,6 @@ if __name__ == "__main__":
     else:
         for subdir in subdirectories:
             args.image_dir = subdir
-            args.save_dir = (
-                subdir.parent.parent / f"blip-embs-{args.model_type}" / subdir.name
-            )
+            args.save_dir = subdir.parent.parent / f"blip-embs-{args.model_type}" / subdir.name
             args.save_dir.mkdir(exist_ok=True, parents=True)
             main(args)
