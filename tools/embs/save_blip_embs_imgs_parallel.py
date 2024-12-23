@@ -59,6 +59,7 @@ def cleanup():
 
 @torch.no_grad()
 def main(args):
+    dist.init_process_group(backend="nccl")  # Automatically initializes world size and rank
     # Initialize the distributed environment automatically
     rank = dist.get_rank()  # Get the current process rank
     world_size = dist.get_world_size()  # Get the total number of processes (GPUs)
@@ -110,7 +111,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_dir", type=Path)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--num_workers", type=int, default=8)
-    parser.add_argument("--model_type", type=str, default="large", choices=["base", "large"])
+    parser.add_argument("--model_type", type=str, default="base", choices=["base", "large"])
 
     args = parser.parse_args()
 
