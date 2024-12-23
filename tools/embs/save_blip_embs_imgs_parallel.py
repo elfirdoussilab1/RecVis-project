@@ -50,7 +50,9 @@ def get_blip_config(model="base"):
 
 def setup(rank, world_size):
     """Initialize the distributed environment."""
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+    dist.init_process_group(backend="nccl", rank=rank, world_size=world_size)
     torch.cuda.set_device(rank)
 
 def cleanup():
@@ -59,25 +61,15 @@ def cleanup():
 
 @torch.no_grad()
 def main(args):
-    dist.init_process_group(backend="nccl")  # Automatically initializes world size and rank
-    # Initialize the distributed environment automatically
-    rank = dist.get_rank()  # Get the current process rank
-    world_size = dist.get_world_size()  # Get the total number of processes (GPUs)
-    
+    rank = int(os.environ["LOCAL_RANK"])
+    world_size = torch.cuda.device_count()
+
     setup(rank, world_size)
     
-    dataset = ImageDataset(image_dir=args.image_dir, 
-                           save_dir=args.save_dir)
-    
-    # Use DistributedSampler to ensure each process gets a different subset of the data
+    dataset = ImageDataset(image_dir=args.image_dir, save_dir=args.save_dir)
     sampler = torch.utils.data.DistributedSampler(dataset, num_replicas=world_size, rank=rank)
-    loader = DataLoader(dataset, batch_size=args.batch_size, 
-                        shuffle=False, 
-                        pin_memory=True, 
-                        num_workers=args.num_workers, 
-                        sampler=sampler)
+    loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=args.num_workers, sampler=sampler)
     
-    # Create model
     config = get_blip_config(args.model_type)
     model = blip_embs(
         pretrained=config["pretrained"],
@@ -89,13 +81,10 @@ def main(args):
         negative_all_rank=config["negative_all_rank"],
     ).to(rank)
     
-    # Wrap the model with DDP
     model = DDP(model, device_ids=[rank], output_device=rank)
-    
     model.eval()
 
-    # Main loop for processing images and saving embeddings
-    for imgs, video_ids in tqdm(loader):
+    for imgs, video_ids in tqdm(loader, desc=f"Rank {rank}"):
         imgs = imgs.to(rank)
         img_embs = model.module.visual_encoder(imgs)
         img_feats = F.normalize(model.module.vision_proj(img_embs[:, 0, :]), dim=-1).cpu()
@@ -103,7 +92,8 @@ def main(args):
             torch.save(img_feat, args.save_dir / f"{video_id}.pth")
 
     cleanup()
-    print(f"All Embeddings Saved for {args.image_dir}")
+    if rank == 0:
+        print(f"All embeddings saved for {args.image_dir}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
