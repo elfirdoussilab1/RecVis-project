@@ -14,7 +14,7 @@ sys.path.append(project_root)
 from src.data.embs import ImageDataset
 from src.model.blip.blip_embs import blip_embs
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def get_blip_config(model="base"):
@@ -76,12 +76,12 @@ def main(args):
         negative_all_rank=config["negative_all_rank"],
     )
 
-    model = model.to(device)
+    model = model.to(args.device)
     print("Successfully loaded the model")
     model.eval()
 
     for imgs, video_ids in tqdm(loader):
-        imgs = imgs.to(device)
+        imgs = imgs.to(args.device)
         img_embs = model.visual_encoder(imgs)
         img_feats = F.normalize(model.vision_proj(img_embs[:, 0, :]), dim=-1).cpu()
         for img_feat, video_id in zip(img_feats, video_ids):
@@ -102,6 +102,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_type", type=str, default="large", choices=["base", "large"]
     )
+    parser.add_argument("--device", type=str, default= 'cuda', help= "enabling parallelism")
     args = parser.parse_args()
 
     if args.save_dir is not None:
