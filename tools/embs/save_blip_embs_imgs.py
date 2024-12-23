@@ -101,7 +101,7 @@ if __name__ == "__main__":
         "--image_dir", type=Path, required=True, help="Path to image directory"
     )
     parser.add_argument("--save_dir", type=Path)
-    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--num_workers", type=int, default=8)
     parser.add_argument(
         "--model_type", type=str, default="large", choices=["base", "large"]
