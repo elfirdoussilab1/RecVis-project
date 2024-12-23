@@ -82,12 +82,8 @@ def main(args):
 
     for imgs, video_ids in tqdm(loader):
         imgs = imgs.to(device)
-        print("imgs.to(device) good")
         img_embs = model.visual_encoder(imgs)
-        print("img_embs good")
         img_feats = F.normalize(model.vision_proj(img_embs[:, 0, :]), dim=-1).cpu()
-        print("img_feats good")
-        print("Starting boucle for")
         for img_feat, video_id in zip(img_feats, video_ids):
             torch.save(img_feat, args.save_dir / f"{video_id}.pth")
     print(f"All Embeddings Saved for {args.image_dir}")
