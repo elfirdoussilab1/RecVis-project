@@ -51,4 +51,5 @@ def blip_embs(pretrained="", **kwargs):
         print("missing keys:")
         print(msg.missing_keys)
         assert len(msg.missing_keys) == 0, "Missing keys!"
+        print("Successfully executed blip_embs function !")
     return model

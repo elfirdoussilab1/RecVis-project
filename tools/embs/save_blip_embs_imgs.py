@@ -86,6 +86,7 @@ def main(args):
 
         for img_feat, video_id in zip(img_feats, video_ids):
             torch.save(img_feat, args.save_dir / f"{video_id}.pth")
+    print(f"All Embeddings Saved for {args.image_dir}")
 
 
 if __name__ == "__main__":
