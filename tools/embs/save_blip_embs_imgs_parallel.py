@@ -1,3 +1,6 @@
+# Author: Aymane El Firdoussi
+# Inscpired from: Lucas Ventura
+
 import os
 import sys
 from pathlib import Path
@@ -5,6 +8,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 from tqdm.auto import tqdm
+from multiprocessing import Pool
 
 script_path = os.path.abspath(__file__)
 script_dir = os.path.dirname(script_path)
@@ -48,7 +52,6 @@ def get_blip_config(model="base"):
 
     return config
 
-
 @torch.no_grad()
 def main(args):
     dataset = ImageDataset(
@@ -76,18 +79,27 @@ def main(args):
         negative_all_rank=config["negative_all_rank"],
     )
 
+    # Enabling Parallel data
+    if torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs")
+        model = torch.nn.DataParallel(model)
+    
     model = model.to(device)
-    print("Successfully loaded the model")
     model.eval()
 
     for imgs, video_ids in tqdm(loader):
         imgs = imgs.to(device)
         img_embs = model.visual_encoder(imgs)
         img_feats = F.normalize(model.vision_proj(img_embs[:, 0, :]), dim=-1).cpu()
-        for img_feat, video_id in zip(img_feats, video_ids):
-            torch.save(img_feat, args.save_dir / f"{video_id}.pth")
+
+        # Save the embeddings in parallel
+        with Pool(args.num_workers) as pool:
+            pool.map(save_embedding, [(img_feat, video_id, args.save_dir) for img_feat, video_id in zip(img_feats, video_ids)])
     print(f"All Embeddings Saved for {args.image_dir}")
 
+def save_embedding(img_feat_video_id_tuple):
+    img_feat, video_id, save_dir = img_feat_video_id_tuple
+    torch.save(img_feat, save_dir / f"{video_id}.pth")
 
 if __name__ == "__main__":
     import argparse
@@ -98,7 +110,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--save_dir", type=Path)
     parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument(
         "--model_type", type=str, default="large", choices=["base", "large"]
     )
