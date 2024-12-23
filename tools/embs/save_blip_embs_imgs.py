@@ -77,6 +77,7 @@ def main(args):
     )
 
     model = model.to(device)
+    print("Successfully loaded the model")
     model.eval()
 
     for imgs, video_ids in tqdm(loader):
