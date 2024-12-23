@@ -155,12 +155,14 @@ class CIRRDataset(Dataset):
         else:
             self.pairid2tar = None
 
-        if split == "train":
-            img_pths = self.img_dir.glob("*/*.png")
-            emb_pths = self.emb_dir.glob("*/*.pth")
-        else:
-            img_pths = self.img_dir.glob("*.png")
-            emb_pths = self.emb_dir.glob("*.pth")
+        # if split == "train":
+        #     img_pths = self.img_dir.glob("*/*.png")
+        #     emb_pths = self.emb_dir.glob("*/*.pth")
+        # else:
+        #     img_pths = self.img_dir.glob("*.png")
+        #     emb_pths = self.emb_dir.glob("*.pth")
+        img_pths = self.img_dir.glob("*.png") # because we flattened the train folder
+        emb_pths = self.emb_dir.glob("*.pth")
         self.id2imgpth = {img_pth.stem: img_pth for img_pth in img_pths}
         self.id2embpth = {emb_pth.stem: emb_pth for emb_pth in emb_pths}
 
