@@ -4,3 +4,5 @@ datasets/
 annotation/
 myenv/
 __pycache__/
+outputs/
+
