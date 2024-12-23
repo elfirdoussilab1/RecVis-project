@@ -2,7 +2,7 @@ name: server
 
 # specific attributes to this machine
 batch_size: 16
-num_workers: 2
+num_workers: 1
 
 defaults:
   - default@paths
