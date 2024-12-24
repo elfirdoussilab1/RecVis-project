@@ -14,7 +14,7 @@ logger_level: INFO
 defaults:
   - _self_
   - data: cirr
-  - test: all
+  - test: cirr # Ay: I changed this: all -> cirr
   - machine: server
   - trainer: gpu
   - model: blip-base # Ay: need to change this if I use large
