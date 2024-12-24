@@ -21,7 +21,7 @@ def get_blip_config(model="base"):
     config = dict()
     if model == "base":
         config["pretrained"] = (
-            "https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_base_capfilt_large.pth "
+            "https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_base_capfilt_large.pth"
         )
         config["vit"] = "base"
         config["batch_size_train"] = 32

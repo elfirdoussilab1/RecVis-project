@@ -1,0 +1,5 @@
+name: blip-base-coco
+
+path: "https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_base_capfilt_large.pth"
+
+image_size: 384
