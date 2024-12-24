@@ -13,3 +13,4 @@ prefix: "" # a string to put at the beginning of metric keys
 group: ""
 tags: []
 job_type: ""
+api_key: "7c2c719a4d241a91163207b8ae5eb635bc0302a4"
