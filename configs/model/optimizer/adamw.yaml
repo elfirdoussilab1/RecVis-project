@@ -1,5 +1,5 @@
 _target_: torch.optim.AdamW
 _partial_: true
 
-lr: 1e-05
+lr: 1e-4 # Ay: changed this according to experiment 1 with cirr
 weight_decay: 0.05
