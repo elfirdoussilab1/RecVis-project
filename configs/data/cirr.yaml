@@ -16,7 +16,7 @@ img_dirs:
   val: ${data.dataset_dir}/images/dev
 
 emb_dirs:
-  train: ${data.dataset_dir}/${model.basemodel}-embs-base/train # change this to large if we switch models
-  val: ${data.dataset_dir}/${model.basemodel}-embs-base/dev
+  train: ${data.dataset_dir}/${model.basemodel}-embs-large/train # change this to large if we switch models
+  val: ${data.dataset_dir}/${model.basemodel}-embs-large/dev
 
 image_size: ${model.ckpt.image_size}

@@ -17,7 +17,7 @@ defaults:
   - test: cirr # Ay: I changed this: all -> cirr
   - machine: server
   - trainer: gpu
-  - model: blip-base # Ay: need to change this if I use large
+  - model: blip-large # Ay: need to change this if I use large
   - model/ckpt: blip-l-coco
   - model/loss: hn_nce # not used
   - model/loss_terms: si_ti # not used
