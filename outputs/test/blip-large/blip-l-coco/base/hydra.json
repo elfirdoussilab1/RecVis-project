@@ -1,0 +1,126 @@
+{
+  "run_name": "base",
+  "seed": 1234,
+  "logger_level": "INFO",
+  "paths": {
+    "root_dir": ".",
+    "work_dir": "/home/afirdoussi1234/RecVis-project",
+    "output_dir": "/home/afirdoussi1234/RecVis-project/outputs/test/blip-large/blip-l-coco/base",
+    "datasets_dir": "/home/afirdoussi1234/RecVis-project/datasets/",
+    "log_dir": "./logs/"
+  },
+  "data": {
+    "dataname": "cirr",
+    "_target_": "src.data.cirr.CIRRDataModule",
+    "dataset_dir": "/home/afirdoussi1234/RecVis-project/datasets//CIRR",
+    "batch_size": 16,
+    "num_workers": 2,
+    "annotation": {
+      "train": "/home/afirdoussi1234/RecVis-project/annotation/cirr/cap.rc2.train.json",
+      "val": "/home/afirdoussi1234/RecVis-project/annotation/cirr/cap.rc2.val.json"
+    },
+    "img_dirs": {
+      "train": "/home/afirdoussi1234/RecVis-project/datasets//CIRR/images/train",
+      "val": "/home/afirdoussi1234/RecVis-project/datasets//CIRR/images/dev"
+    },
+    "emb_dirs": {
+      "train": "/home/afirdoussi1234/RecVis-project/datasets//CIRR/blip-embs-large/train",
+      "val": "/home/afirdoussi1234/RecVis-project/datasets//CIRR/blip-embs-large/dev"
+    },
+    "image_size": 384
+  },
+  "test": {
+    "cirr": {
+      "dataname": "cirr",
+      "_target_": "src.data.cirr.CIRRTestDataModule",
+      "test": {
+        "_target_": "src.test.blip.cirr.TestCirr"
+      },
+      "batch_size": 16,
+      "num_workers": 2,
+      "annotation": "/home/afirdoussi1234/RecVis-project/annotation/cirr/cap.rc2.test1.json",
+      "img_dirs": "/home/afirdoussi1234/RecVis-project/datasets//CIRR/images/test1",
+      "emb_dirs": "/home/afirdoussi1234/RecVis-project/datasets//CIRR/blip-embs-large/test1",
+      "image_size": 384
+    }
+  },
+  "machine": {
+    "paths": {
+      "root_dir": ".",
+      "work_dir": "/home/afirdoussi1234/RecVis-project",
+      "output_dir": "/home/afirdoussi1234/RecVis-project/outputs/test/blip-large/blip-l-coco/base",
+      "datasets_dir": "/home/afirdoussi1234/RecVis-project/datasets/",
+      "log_dir": "./logs/"
+    },
+    "name": "server",
+    "batch_size": 16,
+    "num_workers": 2
+  },
+  "trainer": {
+    "default_root_dir": "/home/afirdoussi1234/RecVis-project/outputs/test/blip-large/blip-l-coco/base",
+    "max_epochs": 6,
+    "accelerator": "gpu",
+    "devices": [
+      1
+    ],
+    "precision": "16-mixed",
+    "log_interval": 1,
+    "print_interval": 10,
+    "save_ckpt": "all",
+    "fabric": {
+      "_target_": "lightning.Fabric",
+      "accelerator": "gpu",
+      "devices": [
+        1
+      ],
+      "precision": "16-mixed",
+      "loggers": {
+        "logger_name": "none",
+        "project": null
+      }
+    },
+    "logger": {
+      "logger_name": "none",
+      "project": null
+    }
+  },
+  "model": {
+    "modelname": "blip-large",
+    "basemodel": "blip",
+    "_target_": "src.model.blip.blip_cir.blip_cir",
+    "ckpt_path": "https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_large_retrieval_coco.pth",
+    "model": {
+      "_target_": "src.model.blip.blip_cir.BLIPCir",
+      "med_config": "/home/afirdoussi1234/RecVis-project/configs/med_config.json",
+      "image_size": 384,
+      "vit": "large",
+      "vit_grad_ckpt": true,
+      "vit_ckpt_layer": 12,
+      "embed_dim": 256,
+      "train_vit": false,
+      "loss": {
+        "_target_": "src.model.blip.loss.HardNegativeNCE",
+        "name": "hnnce",
+        "alpha": 1,
+        "beta": 0.5
+      },
+      "si_ti_weight": 1.0,
+      "si_tc_weight": 0.0
+    },
+    "ckpt": {
+      "name": "blip-l-coco",
+      "path": "https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_large_retrieval_coco.pth",
+      "image_size": 384
+    },
+    "loss": {
+      "_target_": "src.model.blip.loss.HardNegativeNCE",
+      "name": "hnnce",
+      "alpha": 1,
+      "beta": 0.5
+    },
+    "loss_terms": {
+      "si_ti_weight": 1.0,
+      "si_tc_weight": 0.0
+    }
+  }
+}

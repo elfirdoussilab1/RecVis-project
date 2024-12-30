@@ -4,5 +4,11 @@ datasets/
 annotation/
 myenv/
 __pycache__/
-outputs/
+*.ckpt
+*.pth
+*.log
+.hydra/
+wandb/
+*.wandb
+
 
