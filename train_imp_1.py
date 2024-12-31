@@ -54,6 +54,7 @@ def evaluate_imp_1(blip_model, weights, data_loader):
     pair_ids = []
 
     for batch in data_loader:
+        batch = batch.to(device)
         ref_img = batch["ref_img"]
         tar_feat = batch["tar_img_feat"]
         caption = batch["edit"]
@@ -79,7 +80,7 @@ def evaluate_imp_1(blip_model, weights, data_loader):
                 attention_mask=text.attention_mask,
                 return_dict=True,
                 mode="text",
-            )
+            ).to(device)
         t = text_output.last_hidden_state
         t = F.normalize(blip_model.text_proj(t), dim=-1)
 
@@ -93,7 +94,7 @@ def evaluate_imp_1(blip_model, weights, data_loader):
             encoder_hidden_states=ref_img_embs,
             encoder_attention_mask=ref_img_atts,
             return_dict=True,
-        )
+        ).to(device)
         f = query_embs.last_hidden_state[:, 0, :]
         f = F.normalize(blip_model.text_proj(f), dim=-1)
         
