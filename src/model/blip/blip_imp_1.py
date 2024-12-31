@@ -7,7 +7,7 @@ import csv
 class BLIP_Imp_1(nn.Module):
     def __init__(self):
         super().__init__()
-        ckpt_path = 'outputs/cirr/blip-large/blip-l-coco/tv-False_loss-hnnce_lr-0.00001/base/ckpt_5.ckpt'
+        ckpt_path = 'outputs/cirr/blip-large/blip-l-coco/tv-False_loss-hnnce_lr-0.0001/base/ckpt_5.ckpt'
         self.model = blip_cir(None, ckpt_path)
 
         # Freezing weights of the model
