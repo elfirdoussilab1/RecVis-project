@@ -173,7 +173,7 @@ def main(args):
     model = BLIP_Imp_1().to(device)
     calculate_model_params(model)
 
-    optimizer = torch.optim.SGD(model.W, lr = lr)
+    optimizer = torch.optim.SGD([model.W], lr = lr, momentum=0.9)
 
     scheduler = CosineSchedule(min_lr= 0, init_lr= lr, decay_rate=None, max_epochs= max_epochs)
 
