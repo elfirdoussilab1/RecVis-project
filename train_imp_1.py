@@ -26,7 +26,6 @@ def train(model, train_loader, optimizer, epoch):
     model.train()
 
     for batch_idx, batch in enumerate(train_loader):
-        batch = batch.to(device)
         optimizer.zero_grad()
         loss = model(batch)
         loss.backward()
@@ -55,11 +54,10 @@ def evaluate_imp_1(blip_model, weights, data_loader):
     pair_ids = []
 
     for batch in data_loader:
-        batch = batch.to(device)
-        ref_img = batch["ref_img"]
-        tar_feat = batch["tar_img_feat"]
-        caption = batch["edit"]
-        pair_id = batch["pair_id"]
+        ref_img = batch["ref_img"].to(device)
+        tar_feat = batch["tar_img_feat"].to(device)
+        caption = batch["edit"].to(device)
+        pair_id = batch["pair_id"].to(device)
 
         pair_ids.extend(pair_id.cpu().numpy().tolist())
         captions.extend(caption)
