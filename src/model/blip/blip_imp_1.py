@@ -18,7 +18,7 @@ class BLIP_Imp_1(nn.Module):
             param.requires_grad = False
         
         # Creating the 3 weights that will be used to compute the combined embedding
-        self.W = nn.Parameter(torch.ones(3), requires_grad= True, device = device)
+        self.W = nn.Parameter(torch.ones(3), requires_grad= True).to(device)
         self.device = device
 
     def forward(self, batch):

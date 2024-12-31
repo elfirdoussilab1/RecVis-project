@@ -19,7 +19,7 @@ from src.tools.scheduler import CosineSchedule
 key = '7c2c719a4d241a91163207b8ae5eb635bc0302a4' # Add key here
 wandb.login(key=key)
 
-device ="cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using device : ", device)
 
 def train(model, train_loader, optimizer, epoch):
