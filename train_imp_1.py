@@ -165,7 +165,7 @@ def main(args):
 
     # Dataset
     data = CIRRDataModule(batch_size=batch_size, num_workers=num_workers, 
-                          annotation=annotation, image_dirs= img_dirs, emb_dirs=emb_dirs)
+                          annotation=annotation, img_dirs= img_dirs, emb_dirs=emb_dirs)
 
     loader_train = data.train_dataloader()
     loader_val = data.val_dataloader()
