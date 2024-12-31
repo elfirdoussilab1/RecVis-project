@@ -26,6 +26,7 @@ def train(model, train_loader, optimizer, epoch):
     model.train()
 
     for batch_idx, batch in enumerate(train_loader):
+        batch = batch.to(device)
         optimizer.zero_grad()
         loss = model(batch)
         loss.backward()
