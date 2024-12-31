@@ -172,7 +172,9 @@ def main(args):
 
     model = BLIP_Imp_1(device).to(device)
     calculate_model_params(model)
-
+    n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("The number of trainabale params : ", n_trainable)
+    
     optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum=0.9)
 
     scheduler = CosineSchedule(min_lr= 0, init_lr= lr, decay_rate=None, max_epochs= max_epochs)
