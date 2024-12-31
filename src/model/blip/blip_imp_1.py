@@ -1,14 +1,17 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.model.blip.blip_cir import blip_cir
+from src.model.blip.blip_cir import *
+from src.model.blip.loss import *
 import csv
 
 class BLIP_Imp_1(nn.Module):
     def __init__(self):
         super().__init__()
         ckpt_path = 'outputs/cirr/blip-large/blip-l-coco/tv-False_loss-hnnce_lr-0.0001/base/ckpt_5.ckpt'
-        self.model = blip_cir(None, ckpt_path)
+        loss = HardNegativeNCE(alpha = 1, beta= 0.5)
+        blip = BLIPCir(loss)
+        self.model = blip_cir(blip, ckpt_path)
 
         # Freezing weights of the model
         for param in self.model.paramaters():
@@ -75,15 +78,15 @@ class BLIP_Imp_1(nn.Module):
         # s=source, t=target, i=image, c=caption, w=weight
         loss = 0
         if self.model.si_ti_weight > 0:
-            si_ti_loss = self.loss(comb, tar_img_feat, self.temp)
-            loss += si_ti_loss * self.si_ti_weight
+            si_ti_loss = self.model.loss(comb, tar_img_feat, self.temp)
+            loss += si_ti_loss * self.model.si_ti_weight
 
         # Caption retrieval loss, only for WebVid-CoVR and CC-CoIR
         if self.model.si_tc_weight > 0:
             assert "tar_txt_feat" in batch, "tar_txt_feat is not in batch"
             tar_txt_feat = batch["tar_txt_feat"]
-            si_tc_loss = self.loss(comb, tar_txt_feat, self.temp)
-            loss += si_tc_loss * self.si_tc_weight
+            si_tc_loss = self.model.loss(comb, tar_txt_feat, self.model.temp)
+            loss += si_tc_loss * self.model.si_tc_weight
 
         return loss
     
