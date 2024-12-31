@@ -172,7 +172,7 @@ def main(args):
     loader_train = data.train_dataloader()
     loader_val = data.val_dataloader()
 
-    model = BLIP_Imp_1().to(device)
+    model = BLIP_Imp_1(device).to(device)
     calculate_model_params(model)
 
     optimizer = torch.optim.SGD([model.W], lr = lr, momentum=0.9)
