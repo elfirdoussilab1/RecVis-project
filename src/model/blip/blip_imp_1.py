@@ -11,13 +11,13 @@ class BLIP_Imp_1(nn.Module):
         ckpt_path = 'outputs/cirr/blip-large/blip-l-coco/tv-False_loss-hnnce_lr-0.0001/base/ckpt_5.ckpt'
         loss = HardNegativeNCE(alpha = 1, beta= 0.5)
         blip = BLIPCir(loss)
-        model = blip_cir(blip, ckpt_path).to(device)
+        blip = blip_cir(blip, ckpt_path).to(device)
 
         # Freezing weights of the model
-        for param in model.parameters():
+        for param in blip.parameters():
             param.requires_grad = False
         
-        self.model = model
+        self.model = blip
         # Creating the 3 weights that will be used to compute the combined embedding
         self.W = nn.Parameter(torch.ones(3), requires_grad= True).to(device)
         self.device = device
