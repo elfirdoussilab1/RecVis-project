@@ -6,26 +6,26 @@ from src.model.blip.loss import *
 import csv
 
 class BLIP_Imp_1(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
         ckpt_path = 'outputs/cirr/blip-large/blip-l-coco/tv-False_loss-hnnce_lr-0.0001/base/ckpt_5.ckpt'
         loss = HardNegativeNCE(alpha = 1, beta= 0.5)
         blip = BLIPCir(loss)
-        self.model = blip_cir(blip, ckpt_path)
+        self.model = blip_cir(blip, ckpt_path).to(device)
 
         # Freezing weights of the model
         for param in self.model.parameters():
             param.requires_grad = False
         
         # Creating the 3 weights that will be used to compute the combined embedding
-        self.W = nn.Parameter(torch.ones(3), requires_grad= True)
+        self.W = nn.Parameter(torch.ones(3), requires_grad= True, device = device)
+        self.device = device
 
     def forward(self, batch):
-        ref_img = batch["ref_img"]
-        caption = batch["edit"]
-        tar_img_feat = batch["tar_img_feat"]
-
-        device = ref_img.device
+        device = self.device
+        ref_img = batch["ref_img"].to(device)
+        caption = batch["edit"].to(device)
+        tar_img_feat = batch["tar_img_feat"].to(device)
 
         # Query embedding: q
         ref_img_embs = self.model.visual_encoder(ref_img) # q
