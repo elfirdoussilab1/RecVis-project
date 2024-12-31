@@ -14,7 +14,7 @@ class BLIP_Imp_1(nn.Module):
         self.model = blip_cir(blip, ckpt_path)
 
         # Freezing weights of the model
-        for param in self.model.paramaters():
+        for param in self.model.parameters():
             param.requires_grad = False
         
         # Creating the 3 weights that will be used to compute the combined embedding
