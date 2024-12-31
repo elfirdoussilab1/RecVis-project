@@ -101,9 +101,9 @@ class BLIPCir(nn.Module): #Ay: CiR means CoIR (CoIR-BLIP !)
             encoder_hidden_states=ref_img_embs,
             encoder_attention_mask=ref_img_atts,
             return_dict=True,
-        ) # Ay: f(q, t) = f(ref_img_embs, encoder_input_ids)?
+        ) 
         query_si_feat = query_si_embs.last_hidden_state[:, 0, :]
-        query_si_feat = F.normalize(self.text_proj(query_si_feat), dim=-1)
+        query_si_feat = F.normalize(self.text_proj(query_si_feat), dim=-1)# Ay: f(q, t) = f(ref_img_embs, encoder_input_ids)
 
         if fabric.world_size > 1:
             # d: devices, b: batch size, e: embedding dim
