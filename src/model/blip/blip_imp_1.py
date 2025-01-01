@@ -18,30 +18,27 @@ class BLIP_Imp_1(nn.Module):
             param.requires_grad = False
         
         # Creating the 3 weights that will be used to compute the combined embedding
-        self.W = nn.Parameter(torch.ones(3), requires_grad= True).to(device)
+        self.W = nn.Parameter(torch.ones(3, device= device), requires_grad= True)
         self.device = device
 
     def forward(self, batch):
         device = self.device
-        ref_img = batch["ref_img"].to(device)
-        print("ref_img of shape: ", ref_img.shape) # I expect (B, 3, 384, 384)
-        caption = batch["edit"]
-        print("length of caption is: ", len(caption)) # I expect (B, ) and each caption has its onw length
-        tar_img_feat = batch["tar_img_feat"].to(device)
-        print("tar_img_feat of shape: ", tar_img_feat.shape) # I expect: ()
+        ref_img = batch["ref_img"].to(device) # shape (B, 3, 384, 384)
+        caption = batch["edit"] # B lists of strings, each of different length
+        tar_img_feat = batch["tar_img_feat"].to(device) # shape (B, 256)
 
         # Query embedding: q
         ref_img_embs = self.blip.visual_encoder(ref_img) # q
-        q = F.normalize(self.blip.vision_proj(ref_img_embs), dim=-1) # vectors of size embed_dim=256
-        print("Shape of q : ", q.shape) # [B, 577, 256]
+        q = F.normalize(self.blip.vision_proj(ref_img_embs), dim=-1) # shape (B, 577, 256)
+        q = q.mean(dim = 1) # shape (B, 256)
+        print("Shape of q : ", q.shape)
 
         # Target image encoding: h
         tar_img_feat = tar_img_feat.to(device) 
-        tar_img_feat = F.normalize(tar_img_feat, dim=-1) # h(v)
-        print("shape of tar_img_feat: ", tar_img_feat.shape)
+        tar_img_feat = F.normalize(tar_img_feat, dim=-1) # h(v) shape (B, 256)
 
         # Text encoding
-        text = self.model.tokenizer(
+        text = self.blip.tokenizer(
             caption,
             padding="longest",
             truncation=True,
@@ -49,23 +46,23 @@ class BLIP_Imp_1(nn.Module):
             return_tensors="pt",
         ).to(device) # sequence of tokens of modification text "t" (tensor of integers)
 
-        text_output = self.model.text_encoder(
+        text_output = self.blip.text_encoder(
                 text.input_ids,
                 attention_mask=text.attention_mask,
                 return_dict=True,
                 mode="text",
             )
         t = text_output.last_hidden_state
-        t = F.normalize(self.model.text_proj(t), dim=-1) 
-        print("Shape of t : ", t.shape) # [B, 31, 256]
+        t = F.normalize(self.blip.text_proj(t), dim=-1) # shape (B, 31, 256)
+        t = t.mean(dim = 1)
 
         # Produce the multimodal embedding: f(q,t)
         ref_img_atts = torch.ones(ref_img_embs.size()[:-1], dtype=torch.long).to(device)
 
         # Shift encoder
         encoder_input_ids = text.input_ids.clone()
-        encoder_input_ids[:, 0] = self.model.tokenizer.enc_token_id
-        query_si_embs = self.model.text_encoder(
+        encoder_input_ids[:, 0] = self.blip.tokenizer.enc_token_id
+        query_si_embs = self.blip.text_encoder(
             encoder_input_ids,
             attention_mask=text.attention_mask,
             encoder_hidden_states=ref_img_embs,
@@ -73,24 +70,27 @@ class BLIP_Imp_1(nn.Module):
             return_dict=True,
         )
         query_si_feat = query_si_embs.last_hidden_state[:, 0, :]
-        f = F.normalize(self.model.text_proj(query_si_feat), dim=-1) # f(q, t)
+        f = F.normalize(self.blip.text_proj(query_si_feat), dim=-1) # f(q, t) shape (B, 256)
         print("Shape of f : ", f.shape) # [B, 256]
 
         # Improvement: Combining the three embeddings!
-        comb = self.W[0] * q + self.W[1] * t + self.W[2] * f
+        # stack q, t and f
+        emb_stack = torch.stack([q, t, f], dim=0)  # Shape: (3, B, 256)
+        comb = torch.einsum('i,ibj->bj', self.W, emb_stack) # shape (B, 256)
+        #comb = self.W[0] * q + self.W[1] * t + self.W[2] * f
 
         # s=source, t=target, i=image, c=caption, w=weight
         loss = 0
-        if self.model.si_ti_weight > 0:
-            si_ti_loss = self.model.loss(comb, tar_img_feat, self.temp)
-            loss += si_ti_loss * self.model.si_ti_weight
+        if self.blip.si_ti_weight > 0:
+            si_ti_loss = self.blip.loss(comb, tar_img_feat, self.blip.temp)
+            loss += si_ti_loss * self.blip.si_ti_weight
 
         # Caption retrieval loss, only for WebVid-CoVR and CC-CoIR
-        if self.model.si_tc_weight > 0:
+        if self.blip.si_tc_weight > 0:
             assert "tar_txt_feat" in batch, "tar_txt_feat is not in batch"
             tar_txt_feat = batch["tar_txt_feat"]
-            si_tc_loss = self.model.loss(comb, tar_txt_feat, self.model.temp)
-            loss += si_tc_loss * self.model.si_tc_weight
+            si_tc_loss = self.blip.loss(comb, tar_txt_feat, self.blip.temp)
+            loss += si_tc_loss * self.blip.si_tc_weight
 
         return loss
     
