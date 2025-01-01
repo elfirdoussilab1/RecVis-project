@@ -10,14 +10,13 @@ class BLIP_Imp_1(nn.Module):
         super().__init__()
         ckpt_path = 'outputs/cirr/blip-large/blip-l-coco/tv-False_loss-hnnce_lr-0.0001/base/ckpt_5.ckpt'
         loss = HardNegativeNCE(alpha = 1, beta= 0.5)
-        blip = BLIPCir(loss)
-        blip = blip_cir(blip, ckpt_path).to(device)
+        blip_large = BLIPCir(loss)
+        self.blip = blip_cir(blip_large, ckpt_path).to(device)
 
         # Freezing weights of the model
-        for param in blip.parameters():
+        for param in self.blip.parameters():
             param.requires_grad = False
         
-        self.model = blip
         # Creating the 3 weights that will be used to compute the combined embedding
         self.W = nn.Parameter(torch.ones(3), requires_grad= True).to(device)
         self.device = device
@@ -25,17 +24,21 @@ class BLIP_Imp_1(nn.Module):
     def forward(self, batch):
         device = self.device
         ref_img = batch["ref_img"].to(device)
+        print("ref_img of shape: ", ref_img.shape) # I expect (B, 3, 384, 384)
         caption = batch["edit"]
+        print("length of caption is: ", len(caption)) # I expect (B, ) and each caption has its onw length
         tar_img_feat = batch["tar_img_feat"].to(device)
+        print("tar_img_feat of shape: ", tar_img_feat.shape) # I expect: ()
 
         # Query embedding: q
-        ref_img_embs = self.model.visual_encoder(ref_img) # q
-        q = F.normalize(self.model.vision_proj(ref_img_embs), dim=-1) # vectors of size embed_dim=256
-        print("Shape of q : ", q.shape)
+        ref_img_embs = self.blip.visual_encoder(ref_img) # q
+        q = F.normalize(self.blip.vision_proj(ref_img_embs), dim=-1) # vectors of size embed_dim=256
+        print("Shape of q : ", q.shape) # [B, 577, 256]
 
         # Target image encoding: h
         tar_img_feat = tar_img_feat.to(device) 
         tar_img_feat = F.normalize(tar_img_feat, dim=-1) # h(v)
+        print("shape of tar_img_feat: ", tar_img_feat.shape)
 
         # Text encoding
         text = self.model.tokenizer(
@@ -53,8 +56,8 @@ class BLIP_Imp_1(nn.Module):
                 mode="text",
             )
         t = text_output.last_hidden_state
-        t = F.normalize(self.model.text_proj(t), dim=-1) # vectors of size embed_dim=256
-        print("Shape of t : ", t.shape)
+        t = F.normalize(self.model.text_proj(t), dim=-1) 
+        print("Shape of t : ", t.shape) # [B, 31, 256]
 
         # Produce the multimodal embedding: f(q,t)
         ref_img_atts = torch.ones(ref_img_embs.size()[:-1], dtype=torch.long).to(device)
@@ -71,7 +74,7 @@ class BLIP_Imp_1(nn.Module):
         )
         query_si_feat = query_si_embs.last_hidden_state[:, 0, :]
         f = F.normalize(self.model.text_proj(query_si_feat), dim=-1) # f(q, t)
-        print("Shape of f : ", f.shape)
+        print("Shape of f : ", f.shape) # [B, 256]
 
         # Improvement: Combining the three embeddings!
         comb = self.W[0] * q + self.W[1] * t + self.W[2] * f
