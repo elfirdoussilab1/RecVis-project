@@ -42,9 +42,8 @@ def train(model, train_loader, optimizer, epoch):
                 }
             )
 @torch.no_grad()
-def evaluate_imp_1(blip_model, weights, data_loader):
+def evaluate_imp_1(model, data_loader):
     # model is the BLIP-Large model ! (gotten with model.model)
-
     print("Computing features for evaluation...")
     start_time = time.time()
 
@@ -56,49 +55,14 @@ def evaluate_imp_1(blip_model, weights, data_loader):
     for batch in data_loader:
         ref_img = batch["ref_img"].to(device)
         tar_feat = batch["tar_img_feat"].to(device)
-        caption = batch["edit"].to(device)
-        pair_id = batch["pair_id"].to(device)
+        caption = batch["edit"]
+        pair_id = batch["pair_id"]
 
         pair_ids.extend(pair_id.cpu().numpy().tolist())
         captions.extend(caption)
 
-        # Query embedding: q
-        ref_img_embs = blip_model.visual_encoder(ref_img)
-        q = F.normalize(blip_model.vision_proj(ref_img_embs), dim=-1)
-
-        # Text encoding
-        text = blip_model.tokenizer(
-            caption,
-            padding="longest",
-            truncation=True,
-            max_length=64,
-            return_tensors="pt",
-        ).to(device)
-        text_output = blip_model.text_encoder(
-                text.input_ids,
-                attention_mask=text.attention_mask,
-                return_dict=True,
-                mode="text",
-            ).to(device)
-        t = text_output.last_hidden_state
-        t = F.normalize(blip_model.text_proj(t), dim=-1)
-
-        # Shift encoder
-        ref_img_atts = torch.ones(ref_img_embs.size()[:-1], dtype=torch.long).to(device)
-        encoder_input_ids = text.input_ids.clone()
-        encoder_input_ids[:, 0] = blip_model.tokenizer.enc_token_id
-        query_embs = blip_model.text_encoder(
-            encoder_input_ids,
-            attention_mask=text.attention_mask,
-            encoder_hidden_states=ref_img_embs,
-            encoder_attention_mask=ref_img_atts,
-            return_dict=True,
-        ).to(device)
-        f = query_embs.last_hidden_state[:, 0, :]
-        f = F.normalize(blip_model.text_proj(f), dim=-1)
-        
-        # Mixing
-        query_feat = weights[0] * q + weights[1] * t + weights[2] * f
+        # Compute comb embedding
+        query_feat = model.compute_comb(ref_img, caption)
 
         query_feats.append(query_feat.cpu())
 
@@ -155,7 +119,7 @@ def main(args):
     wandb.init(
             # set the wandb project where this run will be logged
             project=f"CoVR-base",
-            name = f"Imp-1: batch-size = {batch_size}, lr = {lr}"
+            name = f"Imp-1: batch-size = {batch_size}, lr = {lr}, optimizer = SGD"
         )
     
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -195,7 +159,7 @@ def main(args):
 
         print("Evaluate")
         model.eval()
-        evaluate_imp_1(model.model, model.W, loader_val)
+        evaluate_imp_1(model, loader_val)
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))

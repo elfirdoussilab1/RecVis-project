@@ -18,24 +18,15 @@ class BLIP_Imp_1(nn.Module):
             param.requires_grad = False
         
         # Creating the 3 weights that will be used to compute the combined embedding
-        self.W = nn.Parameter(torch.ones(3, device= device), requires_grad= True)
+        self.W = nn.Parameter(torch.tensor([0, 0, 1], dtype=torch.float, device= device), requires_grad= True)
         self.device = device
 
-    def forward(self, batch):
-        device = self.device
-        ref_img = batch["ref_img"].to(device) # shape (B, 3, 384, 384)
-        caption = batch["edit"] # B lists of strings, each of different length
-        tar_img_feat = batch["tar_img_feat"].to(device) # shape (B, 256)
-
+    def compute_comb(self, ref_img, caption):
+        # Computes the mixed embedding
         # Query embedding: q
         ref_img_embs = self.blip.visual_encoder(ref_img) # q
         q = F.normalize(self.blip.vision_proj(ref_img_embs), dim=-1) # shape (B, 577, 256)
         q = q.mean(dim = 1) # shape (B, 256)
-        print("Shape of q : ", q.shape)
-
-        # Target image encoding: h
-        tar_img_feat = tar_img_feat.to(device) 
-        tar_img_feat = F.normalize(tar_img_feat, dim=-1) # h(v) shape (B, 256)
 
         # Text encoding
         text = self.blip.tokenizer(
@@ -44,7 +35,7 @@ class BLIP_Imp_1(nn.Module):
             truncation=True,
             max_length=64,
             return_tensors="pt",
-        ).to(device) # sequence of tokens of modification text "t" (tensor of integers)
+        ).to(self.device) # sequence of tokens of modification text "t" (tensor of integers)
 
         text_output = self.blip.text_encoder(
                 text.input_ids,
@@ -57,7 +48,7 @@ class BLIP_Imp_1(nn.Module):
         t = t.mean(dim = 1)
 
         # Produce the multimodal embedding: f(q,t)
-        ref_img_atts = torch.ones(ref_img_embs.size()[:-1], dtype=torch.long).to(device)
+        ref_img_atts = torch.ones(ref_img_embs.size()[:-1], dtype=torch.long).to(self.device)
 
         # Shift encoder
         encoder_input_ids = text.input_ids.clone()
@@ -71,14 +62,27 @@ class BLIP_Imp_1(nn.Module):
         )
         query_si_feat = query_si_embs.last_hidden_state[:, 0, :]
         f = F.normalize(self.blip.text_proj(query_si_feat), dim=-1) # f(q, t) shape (B, 256)
-        print("Shape of f : ", f.shape) # [B, 256]
 
         # Improvement: Combining the three embeddings!
         # stack q, t and f
         emb_stack = torch.stack([q, t, f], dim=0)  # Shape: (3, B, 256)
         comb = torch.einsum('i,ibj->bj', self.W, emb_stack) # shape (B, 256)
         #comb = self.W[0] * q + self.W[1] * t + self.W[2] * f
+        return comb
 
+    def forward(self, batch):
+        device = self.device
+        ref_img = batch["ref_img"].to(device) # shape (B, 3, 384, 384)
+        caption = batch["edit"] # B lists of strings, each of different length
+        tar_img_feat = batch["tar_img_feat"].to(device) # shape (B, 256)
+
+        # Target image encoding: h
+        tar_img_feat = tar_img_feat.to(device) 
+        tar_img_feat = F.normalize(tar_img_feat, dim=-1) # h(v) shape (B, 256)
+
+        # Combination of embeddings
+        comb = self.compute_comb(ref_img, caption)
+        
         # s=source, t=target, i=image, c=caption, w=weight
         loss = 0
         if self.blip.si_ti_weight > 0:
