@@ -160,6 +160,7 @@ def main(args):
         print("Evaluate")
         model.eval()
         evaluate_imp_1(model, loader_val)
+        model.save()
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
