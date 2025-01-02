@@ -3,6 +3,7 @@ import shutil
 import time
 from pathlib import Path
 import wandb
+from tqdm.auto import tqdm
 
 import torch
 import torch.nn as nn
@@ -42,7 +43,7 @@ def train(model, train_loader, optimizer, epoch):
                 }
             )
 @torch.no_grad()
-def evaluate_imp_1(model, data_loader):
+def evaluate_imp_1(model, data_loader, disable_tqdm = True):
     # model is the BLIP-Imp-1
     start_time = time.time()
 
@@ -51,7 +52,7 @@ def evaluate_imp_1(model, data_loader):
     captions = []
     pair_ids = []
 
-    for batch in data_loader:
+    for batch in tqdm(data_loader, disable= disable_tqdm):
         ref_img = batch["ref_img"].to(device)
         tar_feat = batch["tar_img_feat"].to(device)
         caption = batch["edit"]

@@ -60,7 +60,8 @@ def main(args):
 
     for i, w_0 in enumerate(W_0):
         print(f"Step {i} / {N} ")
-        for j, w_1 in tqdm(enumerate(W_1), total = N):
+        for j, w_1 in enumerate(W_1):
+            print(f"Sub-Step {j} / {N} ")
             if w_0 + w_1 <= 1: # constraint
                 w0_valid.append(w_0)
                 w1_valid.append(w_1)
@@ -75,7 +76,7 @@ def main(args):
                 assert torch.allclose(model.W.data, new_W, atol=1e-6), "W was not updated correctly!"
 
                 # Evaluation
-                eval_results = evaluate_imp_1(model, loader_val)
+                eval_results = evaluate_imp_1(model, loader_val, disable_tqdm=False)
                 R_1.append(eval_results["R1"])
                 R_5.append(eval_results["R5"])
                 R_mean.append(eval_results["R_mean"])
