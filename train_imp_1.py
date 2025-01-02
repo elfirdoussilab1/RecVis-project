@@ -43,8 +43,7 @@ def train(model, train_loader, optimizer, epoch):
             )
 @torch.no_grad()
 def evaluate_imp_1(model, data_loader):
-    # model is the BLIP-Large model ! (gotten with model.model)
-    print("Computing features for evaluation...")
+    # model is the BLIP-Imp-1
     start_time = time.time()
 
     tar_img_feats = []
@@ -88,19 +87,11 @@ def evaluate_imp_1(model, data_loader):
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-    print("Evaluation time {}".format(total_time_str))
+    #print("Evaluation time {}".format(total_time_str))
 
     eval_result = eval_recall(sim_q2t)
     print(eval_result)
-
-    wandb.log(
-        {
-            "val/R1": eval_result["R1"],
-            "val/R5": eval_result["R5"],
-            "val/R10": eval_result["R10"],
-            "val/R_mean": eval_result["R_mean"],
-        }
-    )
+    return eval_result
 
 # Paths
 annotation = {"train": "annotation/cirr/cap.rc2.train.json", 
@@ -159,7 +150,16 @@ def main(args):
 
         print("Evaluate")
         model.eval()
-        evaluate_imp_1(model, loader_val)
+        print("Computing features for evaluation...")
+        eval_result = evaluate_imp_1(model, loader_val)
+        wandb.log(
+            {
+                "val/R1": eval_result["R1"],
+                "val/R5": eval_result["R5"],
+                "val/R10": eval_result["R10"],
+                "val/R_mean": eval_result["R_mean"],
+            }
+        )
         model.save()
 
     total_time = time.time() - start_time
