@@ -28,7 +28,7 @@ class BLIP_Imp_2(nn.Module):
         # Query embedding: q
         ref_img_embs = self.blip.visual_encoder(ref_img) # q
         q = F.normalize(self.blip.vision_proj(ref_img_embs), dim=-1) # shape (B, 577, 256)
-        q = q.median(dim = 1) # shape (B, 256)
+        q = q.median(dim = 1).values # shape (B, 256)
 
         # Text encoding
         text = self.blip.tokenizer(
@@ -47,7 +47,7 @@ class BLIP_Imp_2(nn.Module):
             )
         t = text_output.last_hidden_state
         t = F.normalize(self.blip.text_proj(t), dim=-1) # shape (B, 31, 256)
-        t = t.median(dim = 1)
+        t = t.median(dim = 1).values
 
         # Produce the multimodal embedding: f(q,t)
         ref_img_atts = torch.ones(ref_img_embs.size()[:-1], dtype=torch.long).to(self.device)
