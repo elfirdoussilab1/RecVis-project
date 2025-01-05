@@ -12,7 +12,7 @@ import torch.nn.functional as F
 import lightning as L
 
 from src.tools.utils import calculate_model_params
-from model.blip.blip_imp import BLIP_Imp
+from src.model.blip.blip_imp import BLIP_Imp
 from src.test.blip.utils import eval_recall
 from src.data.cirr import *
 from src.tools.scheduler import CosineSchedule
