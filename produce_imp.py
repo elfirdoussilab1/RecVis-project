@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 import lightning as L
 
-from model.blip.blip_imp import BLIP_Imp
+from src.model.blip.blip_imp import BLIP_Imp
 from src.data.cirr import *
 from train_imp import evaluate_imp
 
@@ -77,7 +77,7 @@ def main(args):
                 assert torch.allclose(model.W.data, new_W, atol=1e-6), "W was not updated correctly!"
 
                 # Evaluation
-                eval_results = evaluate_imp_1(model, loader_val, disable_tqdm=False)
+                eval_results = evaluate_imp(model, loader_val, disable_tqdm=False)
                 R_1.append(eval_results["R1"])
                 R_5.append(eval_results["R5"])
                 R_mean.append(eval_results["R_mean"])
