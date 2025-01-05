@@ -5,8 +5,8 @@ from src.model.blip.blip_cir import *
 from src.model.blip.loss import *
 import csv
 
-class BLIP_Imp_1(nn.Module):
-    def __init__(self, device):
+class BLIP_Imp(nn.Module):
+    def __init__(self, aggregation, device):
         super().__init__()
         ckpt_path = 'outputs/cirr/blip-large/blip-l-coco/tv-False_loss-hnnce_lr-0.0001/base/ckpt_5.ckpt'
         loss = HardNegativeNCE(alpha = 1, beta= 0.5)
@@ -19,6 +19,7 @@ class BLIP_Imp_1(nn.Module):
         
         # Creating the 3 weights that will be used to compute the combined embedding
         self.W = nn.Parameter(torch.tensor([0, 0, 1], dtype=torch.float, device= device), requires_grad= True)
+        self.aggregation = aggregation
         self.device = device
 
     def compute_comb(self, ref_img, caption):
@@ -26,7 +27,7 @@ class BLIP_Imp_1(nn.Module):
         # Query embedding: q
         ref_img_embs = self.blip.visual_encoder(ref_img) # q
         q = F.normalize(self.blip.vision_proj(ref_img_embs), dim=-1) # shape (B, 577, 256)
-        q = q.mean(dim = 1) # shape (B, 256)
+        #q = q.mean(dim = 1) # shape (B, 256)
 
         # Text encoding
         text = self.blip.tokenizer(
@@ -45,7 +46,21 @@ class BLIP_Imp_1(nn.Module):
             )
         t = text_output.last_hidden_state
         t = F.normalize(self.blip.text_proj(t), dim=-1) # shape (B, 31, 256)
-        t = t.mean(dim = 1)
+        #t = t.mean(dim = 1)
+
+        # Aggregation
+        if "mean" in self.aggregation:
+            q = q.mean(dim = 1) # shape (B, 256)
+            t = t.mean(dim = 1)
+        elif "median" in self.aggregation:
+            q = q.median(dim = 1).values # shape (B, 256)
+            t = t.median(dim = 1).values
+        elif "max_pool" in self.aggregation:
+            q, _ = q.max(dim=1) 
+            t, _ = t.max(dim=1) 
+        else:
+            print(f"Aggregation {self.aggregation} not implemented !")
+            return -1
 
         # Produce the multimodal embedding: f(q,t)
         ref_img_atts = torch.ones(ref_img_embs.size()[:-1], dtype=torch.long).to(self.device)

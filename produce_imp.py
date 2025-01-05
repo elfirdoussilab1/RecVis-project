@@ -8,9 +8,9 @@ import shutil
 from pathlib import Path
 import lightning as L
 
-from src.model.blip.blip_imp_1 import BLIP_Imp_1
+from model.blip.blip_imp import BLIP_Imp
 from src.data.cirr import *
-from train_imp_1 import evaluate_imp_1
+from train_imp import evaluate_imp
 
 
 print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -31,6 +31,7 @@ emb_dirs = {"train": "datasets/CIRR/blip-embs-large/train",
 
 def main(args):
     # Blip Model and data loader
+    aggregation = args.aggregation
     batch_size = args.batch_size
     num_workers = args.num_workers
     N = args.N
@@ -41,7 +42,7 @@ def main(args):
     
     loader_val = data.val_dataloader()
 
-    model = BLIP_Imp_1(device).to(device)
+    model = BLIP_Imp(aggregation, device).to(device)
 
     # Weights: W[0] applies to q, W[1] applies to t and W[2] = 1 - (W[0] + W[1])
     W_0 = np.linspace(0, 1, N)
@@ -91,7 +92,7 @@ def main(args):
     R_mean = np.array(R_mean)
 
     # Store results
-    np.savez("heatmap.npz", x=w0_valid, y=w1_valid, r1=R_1, r2=R_5, r3=R_mean)
+    np.savez(f"heatmap_{aggregation}.npz", x=w0_valid, y=w1_valid, r1=R_1, r2=R_5, r3=R_mean)
     print("Recalls saved successfully! ")
 
 
@@ -99,6 +100,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--aggregation", type=str, default="mean")
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--num_workers", type=int, default=2)
     parser.add_argument("--N", type=int, default=100)

@@ -12,7 +12,7 @@ import torch.nn.functional as F
 import lightning as L
 
 from src.tools.utils import calculate_model_params
-from src.model.blip.blip_imp_1 import BLIP_Imp_1
+from model.blip.blip_imp import BLIP_Imp
 from src.test.blip.utils import eval_recall
 from src.data.cirr import *
 from src.tools.scheduler import CosineSchedule
@@ -43,7 +43,7 @@ def train(model, train_loader, optimizer, epoch):
                 }
             )
 @torch.no_grad()
-def evaluate_imp_1(model, data_loader, disable_tqdm = True):
+def evaluate_imp(model, data_loader, disable_tqdm = True):
     # model is the BLIP-Imp-1
     start_time = time.time()
 
@@ -105,6 +105,7 @@ emb_dirs = {"train": "datasets/CIRR/blip-embs-large/train",
 def main(args):
     lr = args.lr
     batch_size = args.batch_size
+    aggregation = args.aggregation
     max_epochs = args.epochs
     num_workers = args.num_workers
 
@@ -126,7 +127,7 @@ def main(args):
     loader_train = data.train_dataloader()
     loader_val = data.val_dataloader()
 
-    model = BLIP_Imp_1(device).to(device)
+    model = BLIP_Imp(aggregation, device).to(device)
     calculate_model_params(model)
     n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("The number of trainabale params : ", n_trainable)
@@ -152,7 +153,7 @@ def main(args):
         print("Evaluate")
         model.eval()
         print("Computing features for evaluation...")
-        eval_result = evaluate_imp_1(model, loader_val)
+        eval_result = evaluate_imp(model, loader_val)
         wandb.log(
             {
                 "val/R1": eval_result["R1"],
@@ -192,6 +193,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default= 1e-3)
     parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--aggregation", type=str, default="mean")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--num_workers", type=int, default=1)
 
