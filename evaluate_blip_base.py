@@ -5,6 +5,7 @@ from src.data.cirr import *
 from src.model.blip.blip_cir import *
 from src.model.blip.loss import *
 import csv
+from tqdm.auto import tqdm
 
 # Paths
 annotation = {"train": "annotation/cirr/cap.rc2.train.json", 
@@ -28,7 +29,7 @@ def evaluate(model, data_loader):
     captions = []
     pair_ids = []
 
-    for batch in data_loader:
+    for batch in tqdm(data_loader):
         ref_img = batch["ref_img"].to(device)
         tar_feat = batch["tar_img_feat"].to(device)
         caption = batch["edit"]
