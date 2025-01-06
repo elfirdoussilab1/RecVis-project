@@ -99,7 +99,7 @@ def main(args):
     ckpt_path = 'outputs/cirr/blip-base/blip-base-coco/tv-False_loss-hnnce_lr-1e-05/base/ckpt_4.ckpt'
     loss = HardNegativeNCE(alpha = 1, beta= 0.5)
     blip = BLIPCir(loss, vit = "base", vit_ckpt_layer = 4).to(device)
-    model = blip_cir(model, ckpt_path)
+    model = blip_cir(blip, ckpt_path)
 
     # Evaluation
     eval_result = evaluate(model, loader_val)
