@@ -6,6 +6,7 @@ from src.model.blip.blip_cir import *
 from src.model.blip.loss import *
 import csv
 from tqdm.auto import tqdm
+import lightning as L
 
 # Paths
 annotation = {"train": "annotation/cirr/cap.rc2.train.json", 
@@ -17,6 +18,8 @@ emb_dirs = {"train": "datasets/CIRR/blip-embs-large/train",
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using device : ", device)
+
+L.seed_everything(1234, workers=True)
 
 @torch.no_grad()
 def evaluate(model, data_loader):
