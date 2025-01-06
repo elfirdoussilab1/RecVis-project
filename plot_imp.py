@@ -15,7 +15,7 @@ def find_max_coord(x, y, z):
     return x[max_idx], y[max_idx]
 
 # Load the data
-data = np.load("heatmap.npz")
+data = np.load("heatmap_max_pool.npz")
 x_valid = data["x"]
 y_valid = data["y"]
 z1_valid = data["r1"]
@@ -71,6 +71,6 @@ axes[2].scatter(max_x3, max_y3, color='black', marker='*', s=300)
 add_mask(axes[2])
 
 # Save figure
-path = 'heatmap.pdf'
+path = 'heatmap_max_pool.pdf'
 fig.savefig(path, bbox_inches='tight')
 print("Figure saved!")
