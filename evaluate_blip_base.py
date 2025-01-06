@@ -12,8 +12,8 @@ annotation = {"train": "annotation/cirr/cap.rc2.train.json",
               "val": "annotation/cirr/cap.rc2.val.json"}
 img_dirs = {"train": "datasets/CIRR/images/train", 
             "val": "datasets/CIRR/images/dev"}
-emb_dirs = {"train": "datasets/CIRR/blip-embs-large/train", 
-            "val": "datasets/CIRR/blip-embs-large/dev"}
+emb_dirs = {"train": "datasets/CIRR/blip-embs-base/train", 
+            "val": "datasets/CIRR/blip-embs-base/dev"}
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using device : ", device)
@@ -110,8 +110,8 @@ def main(args):
     # Write dictionary to CSV
     with open("eval_blip_base.csv", mode="w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(data.keys())  # Write header
-        writer.writerow(data.values())  # Write values
+        writer.writerow(eval_result.keys())  # Write header
+        writer.writerow(eval_result.values())  # Write values
 
 if __name__ == "__main__":
     import argparse
